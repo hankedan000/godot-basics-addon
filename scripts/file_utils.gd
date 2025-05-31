@@ -23,3 +23,16 @@ static func from_json_file(filepath: String) -> Variant:
 		return json.data
 	push_error("failed to parse JSON object from str '%s'" % [obj_str])
 	return null
+
+static func is_dir_empty(path: String) -> bool:
+	var dir := DirAccess.open(path)
+	if not dir:
+		return false
+		
+	dir.include_hidden = false
+	dir.include_navigational = false
+	if dir.get_directories().size() > 0:
+		return false
+	elif dir.get_files().size() > 0:
+		return false
+	return true

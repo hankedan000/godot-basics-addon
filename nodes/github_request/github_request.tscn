@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://bd0k0hej4cpkr"]
+
+[ext_resource type="Script" path="res://addons/gd_basics/nodes/github_request/github_request.gd" id="1_xh14j"]
+
+[node name="GithubRequest" type="Node"]
+script = ExtResource("1_xh14j")
+
+[node name="HTTPRequest" type="HTTPRequest" parent="."]
+
+[connection signal="request_completed" from="HTTPRequest" to="." method="_on_http_request_request_completed"]
