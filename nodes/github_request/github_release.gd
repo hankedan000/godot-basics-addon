@@ -1,5 +1,4 @@
-class_name GithubRelease
-extends Object
+class_name GithubRelease extends RefCounted
 
 var name : String = ""
 var tag_name : String = ""

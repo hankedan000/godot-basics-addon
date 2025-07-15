@@ -1,5 +1,4 @@
-class_name Version
-extends Object
+class_name Version extends RefCounted
 
 var _major : int = 0
 var _minor : int = 0

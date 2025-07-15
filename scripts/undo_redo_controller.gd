@@ -1,10 +1,8 @@
-class_name UndoController
-extends Object
+class_name UndoController extends RefCounted
 
 signal history_changed()
 
-class UndoOperation:
-	extends Object
+class UndoOperation extends RefCounted:
 	
 	func undo() -> bool:
 		return true
@@ -15,8 +13,7 @@ class UndoOperation:
 	func pretty_str() -> String:
 		return "**pretty_str() unimplemented***"
 
-class PropEditUndoOperation:
-	extends UndoOperation
+class PropEditUndoOperation extends UndoOperation:
 	
 	var _obj : Object = null
 	var _prop : StringName = &''
@@ -49,7 +46,7 @@ class PropEditUndoOperation:
 			"new_value" : str(_new_value),
 			})
 
-class OperationBatch:
+class OperationBatch extends RefCounted:
 	var _ops : Array[UndoOperation] = []
 	
 	func push_op(op: UndoOperation) -> void:
