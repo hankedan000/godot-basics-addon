@@ -24,6 +24,12 @@ class TreePathNodeRef extends RefCounted:
 	func is_valid() -> bool:
 		return is_instance_valid(tree) && ! node_path.is_empty()
 	
+	func get_node_name() -> String:
+		var name_count := node_path.get_name_count()
+		if name_count == 0:
+			return "<null>"
+		return node_path.get_name(name_count - 1)
+	
 	func _to_string() -> String:
 		return "{tree: %s; node_path: %s}" % [tree, node_path]
 
@@ -34,9 +40,12 @@ class UndoOperation extends RefCounted:
 		
 	func redo() -> bool:
 		return true
-		
-	func pretty_str() -> String:
-		return "**pretty_str() unimplemented***"
+	
+	func brief_name() -> String:
+		return "Base Undo Operation"
+	
+	func detail_summary() -> String:
+		return ""
 
 class PropEditUndoOperation extends UndoOperation:
 	var _node_ref := TreePathNodeRef.new()
@@ -74,19 +83,30 @@ class PropEditUndoOperation extends UndoOperation:
 		node.set(_prop, value)
 		return true
 	
-	func pretty_str() -> String:
-		return str({
-			"_node_ref" : _node_ref,
-			"property" : _prop,
-			"old_value" : str(_old_value),
-			"new_value" : str(_new_value),
-			})
+	# very short 2-3 word description of the operation.
+	func brief_name() -> String:
+		return "Property Edit"
+	
+	# more detailed description of the operation, but should still be on a
+	# single line.
+	func detail_summary() -> String:
+		return "%s:%s changed from %s to %s" % [_node_ref.get_node_name(), _prop, _old_value, _new_value]
 
 class OperationBatch extends RefCounted:
 	var _ops : Array[UndoOperation] = []
 	
+	func get_op_count() -> int:
+		return _ops.size()
+	
 	func push_op(op: UndoOperation) -> void:
 		_ops.push_back(op)
+	
+	func get_short_summary() -> String:
+		if _ops.size() == 1:
+			return "%s" % _ops[0].brief_name()
+		elif _ops.size() > 1:
+			return "Batch of %d operations" % _ops.size()
+		return "No operations"
 
 const MAX_UNDO_REDO_HISTORY = 100
 var _undo_stack : Array[OperationBatch] = []
@@ -135,6 +155,24 @@ func redo() -> void:
 		_push_batch(_undo_stack, batch)
 		_within_a_do = false
 		history_changed.emit()
+
+func get_undo_stack_summary(max_items : int = -1) -> String:
+	return _get_stack_summary(_undo_stack, max_items)
+
+func get_redo_stack_summary(max_items : int = -1) -> String:
+	return _get_stack_summary(_redo_stack, max_items)
+
+static func _get_stack_summary(stack: Array[OperationBatch], max_items : int = -1) -> String:
+	var out := ""
+	var idx := 0
+	for batch in stack:
+		if max_items >= 0 && idx >= max_items:
+			break
+		if idx > 0:
+			out += "\n"
+		out += "[%3d] - %s" % [idx, batch.get_short_summary()]
+		idx += 1
+	return out
 
 static func _push_batch(stack: Array[OperationBatch], entry: OperationBatch) -> void:
 	stack.push_back(entry)
