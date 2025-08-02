@@ -2,6 +2,31 @@ class_name UndoController extends RefCounted
 
 signal history_changed()
 
+# a way of storing a reference to a node based on its path within the scene
+class TreePathNodeRef extends RefCounted:
+	var tree : SceneTree = null
+	var node_path := NodePath()
+	
+	func _init(node: Node = null):
+		if ! is_instance_valid(node):
+			return
+		elif ! node.is_inside_tree():
+			return
+		
+		tree = node.get_tree()
+		node_path = tree.root.get_path_to(node)
+	
+	func get_node() -> Node:
+		if ! is_valid():
+			return null
+		return tree.root.get_node(node_path)
+	
+	func is_valid() -> bool:
+		return is_instance_valid(tree) && ! node_path.is_empty()
+	
+	func _to_string() -> String:
+		return "{tree: %s; node_path: %s}" % [tree, node_path]
+
 class UndoOperation extends RefCounted:
 	
 	func undo() -> bool:
@@ -14,33 +39,44 @@ class UndoOperation extends RefCounted:
 		return "**pretty_str() unimplemented***"
 
 class PropEditUndoOperation extends UndoOperation:
-	
-	var _obj : Object = null
+	var _node_ref := TreePathNodeRef.new()
 	var _prop : StringName = &''
-	var _old_value = null
-	var _new_value = null
+	var _old_value : Variant = null
+	var _new_value : Variant = null
 	
-	func _init(obj: Object, prop: StringName, old_value, new_value):
-		if obj == null:
-			push_error("obj can't be null")
-		if prop not in obj:
-			push_error("obj %s doesn't have a property named '%s'" % [obj, prop])
-		_obj = obj
+	func _init(node: Node, prop: StringName, old_value: Variant, new_value: Variant):
+		if ! is_instance_valid(node):
+			push_error("node must be valid")
+			return
+		elif ! node.is_inside_tree():
+			push_error("node must be inside tree")
+			return
+		elif prop not in node:
+			push_error("node %s doesn't have a property named '%s'" % [node, prop])
+			return
+		_node_ref = TreePathNodeRef.new(node)
 		_prop = prop
 		_old_value = old_value
 		_new_value = new_value
 	
 	func undo() -> bool:
-		_obj.set(_prop, _old_value)
-		return true
-		
+		return _apply_prop(_old_value)
+	
 	func redo() -> bool:
-		_obj.set(_prop, _new_value)
-		return true
+		return _apply_prop(_new_value)
+	
+	func _apply_prop(value: Variant) -> bool:
+		var node := _node_ref.get_node()
+		if ! is_instance_valid(node):
+			# get_node() pushes an error for us, so no need
+			return false
 		
+		node.set(_prop, value)
+		return true
+	
 	func pretty_str() -> String:
 		return str({
-			"obj" : str(_obj),
+			"_node_ref" : _node_ref,
 			"property" : _prop,
 			"old_value" : str(_old_value),
 			"new_value" : str(_new_value),
