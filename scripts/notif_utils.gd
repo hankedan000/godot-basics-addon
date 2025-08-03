@@ -48,5 +48,15 @@ const NOTIFICATION_LUT : Dictionary = {
 	CanvasItem.NOTIFICATION_WORLD_2D_CHANGED : "NOTIFICATION_WORLD_2D_CHANGED",
 }
 
-static func int_to_str(what: int) -> String:
-	return NOTIFICATION_LUT.get(what, "%s" % what)
+static func int_to_str(notif_id: int) -> String:
+	return NOTIFICATION_LUT.get(notif_id, "%s" % notif_id)
+
+const LIFE_CYLE_NOTIFICATIONS := [
+	Node.NOTIFICATION_ENTER_TREE,
+	Node.NOTIFICATION_EXIT_TREE,
+	Object.NOTIFICATION_POSTINITIALIZE,
+	Object.NOTIFICATION_PREDELETE
+]
+static func log_node_life_cycle(node: Node, notif_id: int) -> void:
+	if notif_id in LIFE_CYLE_NOTIFICATIONS:
+		print("%s - %s" % [node.name, int_to_str(notif_id)])
